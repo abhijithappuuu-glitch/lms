@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sdmcet-lms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sdmcet
+      POSTGRES_PASSWORD: sdmcet_dev_password
+      POSTGRES_DB: sdmcet_lms
+    ports:
+      - "5432:5432"
+    volumes:
+      - sdmcet_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sdmcet -d sdmcet_lms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sdmcet_pgdata:

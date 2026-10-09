@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Employee" ADD COLUMN     "gender" TEXT,
+ADD COLUMN     "joinDate" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "livingChildren" INTEGER NOT NULL DEFAULT 0;

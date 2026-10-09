@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Employee" ADD COLUMN     "serviceType" TEXT NOT NULL DEFAULT 'VACATION',
+ADD COLUMN     "tenureStatus" TEXT NOT NULL DEFAULT 'PERMANENT';
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'PENDING';

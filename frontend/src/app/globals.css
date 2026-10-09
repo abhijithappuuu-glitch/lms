@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* Make `dark:` utilities follow the `.dark` class on <html> (toggle-driven),
+   instead of Tailwind v4's default prefers-color-scheme media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-brand-navy: #0F172A;
+  --color-brand-blue: #2563EB;
+  --color-brand-blue-hover: #1D4ED8;
+  --color-canvas: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-border: #E2E8F0;
+  
+  --font-sans: var(--font-inter);
+}
+
+:root {
+  --background: var(--color-canvas);
+  --foreground: #0F172A;
+  color-scheme: light;
+}
+
+:root.dark {
+  --background: #020617;
+  --foreground: #F8FAFC;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Native form controls / scrollbars in dark mode */
+.dark select option {
+  background-color: #0F172A;
+  color: #E2E8F0;
+}
+
+.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+.dark ::-webkit-scrollbar-track { background: #0F172A; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; border: 2px solid #0F172A; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }

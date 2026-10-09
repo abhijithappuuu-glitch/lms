@@ -1,0 +1,312 @@
+// schema.prisma — SDMCET Digital Staff Leave Management System
+// Phase 1 Core Domain Model.
+//
+// Deviations from the Phase 1 baseline are marked with `// [FIX]` and are
+// limited to structural issues (missing relations, FK conflicts, missing
+// models referenced by the contracts). Business rules remain data-driven.
+//
+// Database-level guarantees that Prisma cannot express (ledger immutability
+// trigger, ledger CHECK constraints, non-overlapping effective-dated policies)
+// live in prisma/migrations/*_ledger_integrity_constraints/migration.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// DOMAIN: AUTH, USERS & DEPARTMENTS
+// ==========================================
+
+model User {
+  id                  String           @id @default(uuid())
+  email               String           @unique
+  passwordHash        String
+  status              String           @default("PENDING") // PENDING, ACTIVE, REJECTED
+  isActive            Boolean          @default(true)
+  employee            Employee?
+  roles               Role[]           @relation("UserRoles")
+  approvalActions     ApprovalAction[] // [FIX] back-relation for ApprovalAction.actor
+  delegationsGiven    Delegation[]     @relation("Delegator")
+  delegationsReceived Delegation[]     @relation("Delegate")
+  notifications       Notification[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., SYSTEM_ADMIN, HOD, PRINCIPAL, SECRETARY
+  permissions String[] // Granular permissions array
+  users       User[]   @relation("UserRoles")
+}
+
+model Department {
+  id        String               @id @default(uuid())
+  code      String               @unique // e.g., CSE, ECE
+  name      String
+  hodId     String?              @unique
+  hod       Employee?            @relation("DepartmentHOD", fields: [hodId], references: [id])
+  employees Employee[]           @relation("DepartmentStaff")
+  workflows WorkflowDefinition[] // [FIX] department-scoped workflow overrides
+}
+
+model Employee {
+  id            String             @id @default(uuid())
+  employeeId    String             @unique // Institutional ID
+  fullName      String // [FIX] needed for approval screens / reports
+  designation   String? // e.g., Assistant Professor, Office Superintendent
+  userId        String             @unique
+  user          User               @relation(fields: [userId], references: [id])
+  departmentId  String
+  department    Department         @relation("DepartmentStaff", fields: [departmentId], references: [id])
+  managedDept   Department?        @relation("DepartmentHOD")
+  category      String // TEACHING, NON_TEACHING
+  serviceType   String             @default("VACATION") // VACATION, NON_VACATION
+  tenureStatus  String             @default("PERMANENT") // PERMANENT, UNAIDED, PROBATIONARY, CONTRACTUAL
+  
+  // Phase 4A.1: Additional HR fields for policy rules
+  gender        String?            // 'M', 'F'
+  livingChildren Int               @default(0)
+  joinDate      DateTime           @default(now()) @db.Date
+
+  applications  LeaveApplication[]
+  dutyCoverages LeaveApplication[] @relation("DutyAdjustment") // [FIX] back-relation for dutyAdjustedTo
+  ledgerEntries LeaveTransaction[]
+
+  @@index([departmentId])
+}
+
+// ==========================================
+// DOMAIN: LEAVE POLICIES (No Hardcoded Rules)
+// ==========================================
+
+model LeaveType {
+  id            String               @id @default(uuid())
+  code          String               @unique // CL, EL, COMPL, RH, COML, SPCL, VEL, OOD, LOP
+  name          String
+  requiresDoc   Boolean              @default(false)
+  tracksBalance Boolean              @default(true) // [FIX] false for OOD / LOP: never debited from ledger
+  policies      LeavePolicy[]
+  applications  LeaveApplication[] // [FIX] back-relation for LeaveApplication.leaveType
+  transactions  LeaveTransaction[] // [FIX] ledger leaveTypeCode is now FK-checked
+  workflows     WorkflowDefinition[] // [FIX] leave-type-scoped workflow routing
+}
+
+model LeavePolicy {
+  id                  String    @id @default(uuid())
+  leaveTypeId         String
+  leaveType           LeaveType @relation(fields: [leaveTypeId], references: [id])
+  employeeCategory    String // Applies to specific categories
+  annualEntitlement   Float
+  maxContinuousDays   Int?
+  holidayCountingRule String // IGNORE, COUNT_AS_LEAVE, CONDITIONAL
+  combinationRules    Json // JSON array of restricted combinations
+  documentRules       Json      @default("[]") // [FIX] e.g. [{ documentType: MEDICAL_CERT, whenDaysExceed: 3 }]
+  version             Int       @default(1)
+  status              String    @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
+  rules               Json      @default("{}") // Extended policy config
+  effectiveFrom       DateTime // inclusive
+  effectiveTo         DateTime? // exclusive; Null means currently active
+  
+  applications        LeaveApplication[] // Pinned applications
+
+  // Overlapping effective-date windows for the same (leaveType, category)
+  // are rejected by a Postgres trigger (see integrity migration).
+  @@index([leaveTypeId, employeeCategory, effectiveFrom])
+}
+
+// [FIX] Required by holidayCountingRule (IGNORE / COUNT_AS_LEAVE / CONDITIONAL)
+// and by RH (Restricted Holiday) leave. Calendar is data, not code.
+model Holiday {
+  id        String   @id @default(uuid())
+  date      DateTime @db.Date
+  name      String
+  type      String // GENERAL, RESTRICTED
+  createdAt DateTime @default(now())
+
+  @@unique([date, type])
+}
+
+// ==========================================
+// DOMAIN: APPLICATIONS & WORKFLOW
+// ==========================================
+
+// [FIX] LeaveApplication.workflowId referenced "WorkflowDefinitions", which did
+// not exist. Routing is resolved from the most specific active definition
+// (department + leaveType + category > ... > institution default).
+model WorkflowDefinition {
+  id               String               @id @default(uuid())
+  code             String               @unique // e.g., WF_TEACHING_STANDARD
+  name             String
+  departmentId     String? // null = applies to all departments
+  department       Department?          @relation(fields: [departmentId], references: [id])
+  leaveTypeId      String? // null = applies to all leave types
+  leaveType        LeaveType?           @relation(fields: [leaveTypeId], references: [id])
+  employeeCategory String? // null = applies to all categories
+  minDays          Float? // optional threshold, e.g. route to Dean above N days
+  priority         Int                  @default(0) // higher wins when several match
+  version          Int                  @default(1)
+  isActive         Boolean              @default(true)
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  applications     LeaveApplication[]
+  steps            WorkflowStep[]
+  transitions      WorkflowTransition[]
+}
+
+model WorkflowStep {
+  id                   String             @id @default(uuid())
+  workflowDefinitionId String
+  workflow             WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+  stepKey              String // e.g., START, DUTY_ADJUSTMENT, HOD, DEAN, PRINCIPAL
+  displayName          String
+  sequence             Int // optional order
+  actorType            String // e.g., EMPLOYEE, DUTY_ADJUSTER, HOD, DEAN, PRINCIPAL, SYSTEM_ADMIN
+  conditions           Json? // structured condition data
+  isActive             Boolean            @default(true)
+  isTerminal           Boolean            @default(false)
+  applications         LeaveApplication[]
+}
+
+model WorkflowTransition {
+  id                   String             @id @default(uuid())
+  workflowDefinitionId String
+  workflow             WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+  fromStepKey          String
+  action               String // APPROVE, REJECT, RETURN
+  toStepKey            String
+  conditions           Json?
+  isActive             Boolean            @default(true)
+}
+
+model LeaveApplication {
+  id             String             @id @default(uuid())
+  employeeId     String
+  employee       Employee           @relation(fields: [employeeId], references: [id])
+  leaveTypeId    String
+  leaveType      LeaveType          @relation(fields: [leaveTypeId], references: [id]) // [FIX] missing relation
+  leavePolicyId  String?            // Pinned policy version used for evaluation
+  leavePolicy    LeavePolicy?       @relation(fields: [leavePolicyId], references: [id])
+  status         String // DRAFT, PENDING_HOD, PENDING_DEAN, PENDING_PRINCIPAL, RETURNED, SANCTIONED, REJECTED
+  startDate      DateTime
+  endDate        DateTime
+  isHalfDay      Boolean            @default(false) // [FIX] PolicyEvaluationRequest.isHalfDay had no column
+  totalDays      Float
+  reason         String
+  dutyAdjustedTo String? // ID of peer covering duty
+  dutyAdjustee   Employee?          @relation("DutyAdjustment", fields: [dutyAdjustedTo], references: [id]) // [FIX]
+  workflowId     String // Maps to WorkflowDefinition
+  workflow       WorkflowDefinition @relation(fields: [workflowId], references: [id]) // [FIX]
+  currentStepId  String? // Maps to WorkflowStep
+  currentStep    WorkflowStep?      @relation(fields: [currentStepId], references: [id])
+  documents      Document[]
+  approvals      ApprovalAction[]
+  transactions   LeaveTransaction[] // Linked ledger post upon sanction
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([employeeId, status])
+  @@index([status])
+}
+
+model ApprovalAction {
+  id             String           @id @default(uuid())
+  applicationId  String
+  application    LeaveApplication @relation(fields: [applicationId], references: [id])
+  actorId        String // User ID of actual approver
+  actor          User             @relation(fields: [actorId], references: [id])
+  delegationId   String? // Set if this action was performed under delegated authority
+  delegation     Delegation?      @relation(fields: [delegationId], references: [id])
+  stage          String // E.g., stepKey of the workflow
+  workflowStepId String? // Optional link to the WorkflowStep where this action happened
+  decision       String // RECOMMENDED, RETURNED, REJECTED, SANCTIONED, APPROVE
+  remarks        String?
+  timestamp      DateTime         @default(now())
+  previousState  String?
+  resultingState String?
+
+  @@index([applicationId])
+}
+
+// ==========================================
+// DOMAIN: IMMUTABLE LEAVE LEDGER
+// ==========================================
+//
+// Append-only. UPDATE / DELETE are blocked by a database trigger.
+// Sign convention (enforced by CHECK constraint):
+//   CREDIT, REVERSAL -> amount > 0, adds to balance
+//   DEBIT            -> amount > 0, subtracts from balance
+//   ADJUSTMENT       -> amount != 0, signed (+/-) correction
+// Balance = SUM(CREDIT) + SUM(REVERSAL) + SUM(ADJUSTMENT) - SUM(DEBIT)
+
+model LeaveTransaction {
+  id              String            @id @default(uuid())
+  employeeId      String
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveTypeCode   String // CL, EL, etc.
+  leaveType       LeaveType         @relation(fields: [leaveTypeCode], references: [code], onDelete: Restrict) // [FIX] FK-check codes
+  transactionType String // CREDIT, DEBIT, REVERSAL, ADJUSTMENT
+  amount          Float
+  // [FIX] Original design put an FK on referenceId while also storing Official
+  // Duty IDs in it, which would violate the FK. Split into a typed FK
+  // (applicationId) and a free-form external reference (referenceId).
+  applicationId   String?
+  application     LeaveApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  referenceId     String? // Official Duty ID, accrual batch ID, etc.
+  notes           String?
+  timestamp       DateTime          @default(now())
+
+  @@index([employeeId, leaveTypeCode])
+  @@index([applicationId])
+}
+
+model Document {
+  id            String           @id @default(uuid())
+  applicationId String
+  application   LeaveApplication @relation(fields: [applicationId], references: [id])
+  fileUrl       String // S3 Object Key or local path
+  documentType  String // MEDICAL_CERT, EVENT_BROCHURE
+  uploadedAt    DateTime         @default(now())
+}
+
+// ==========================================
+// DOMAIN: NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+  title                String
+  message              String
+  isRead               Boolean  @default(false)
+  relatedApplicationId String?
+  createdAt            DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model Delegation {
+  id              String           @id @default(uuid())
+  delegatorUserId String
+  delegator       User             @relation("Delegator", fields: [delegatorUserId], references: [id])
+  delegateUserId  String
+  delegate        User             @relation("Delegate", fields: [delegateUserId], references: [id])
+  scope           String // e.g., HOD, DEAN, PRINCIPAL (matches WorkflowStep actorType)
+  departmentId    String? // If scope is HOD, restricts to specific department
+  validFrom       DateTime
+  validTo         DateTime
+  reason          String?
+  status          String           @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  approvalActions ApprovalAction[]
+
+  @@index([delegatorUserId])
+  @@index([delegateUserId])
+}
