@@ -216,6 +216,48 @@ export class LeaveApplicationController {
     });
   }
 
+  /**
+   * Recent decided applications (sanctioned / rejected) — powers the
+   * "Recent Approvals" panel. Scoped to the HOD's department when applicable.
+   */
+  @Get('recent')
+  async getRecentApprovals(@GetUser() user: JwtPayload) {
+    const role = user.role;
+    const where: any = { status: { in: ['SANCTIONED', 'REJECTED'] } };
+
+    if (role === 'HOD') {
+      if (!user.departmentId) return [];
+      where.employee = { departmentId: user.departmentId };
+    }
+
+    const apps = await this.prisma.leaveApplication.findMany({
+      where,
+      include: {
+        employee: { include: { department: true } },
+        leaveType: true,
+        approvals: { orderBy: { timestamp: 'desc' }, take: 1, include: { actor: true } }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 8
+    });
+
+    return apps.map(app => {
+      const lastAction = app.approvals[0];
+      return {
+        id: app.id,
+        applicant: app.employee.fullName,
+        department: app.employee.department.name,
+        leaveType: app.leaveType.name,
+        dates: `${app.startDate.toDateString()} - ${app.endDate.toDateString()}`,
+        duration: app.totalDays,
+        status: app.status === 'SANCTIONED' ? 'approved' : 'rejected',
+        decision: app.status === 'SANCTIONED' ? 'Sanctioned' : 'Rejected',
+        decidedBy: lastAction?.stage || lastAction?.actor?.email || '—',
+        date: (lastAction?.timestamp || app.updatedAt).toDateString(),
+      };
+    });
+  }
+
   @Get(':id')
   async getApplication(@Param('id') id: string, @GetUser() user: JwtPayload) {
     const app = await this.prisma.leaveApplication.findUnique({

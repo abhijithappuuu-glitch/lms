@@ -105,6 +105,13 @@ export function useChartData() {
   });
 }
 
+export function useRecentApprovals() {
+  return useQuery({
+    queryKey: ["recentApprovals"],
+    queryFn: () => fetchWithAuth(`/leave/applications/recent`),
+  });
+}
+
 export function useUpdatePolicy() {
   const queryClient = useQueryClient();
 

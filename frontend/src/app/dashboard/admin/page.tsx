@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useTheme } from "../layout";
+import { useTheme } from "@/lib/dashboard-theme";
 import { cn } from "@/lib/utils";
 import { Calendar, Settings, FileText, CheckCircle2 } from "lucide-react";
 import { ActionTable, ActionTableItem } from "@/components/ui/ActionTable";

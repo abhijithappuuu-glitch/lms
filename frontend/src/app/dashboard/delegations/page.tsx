@@ -9,7 +9,7 @@ import { usePendingApprovals } from "@/hooks/useQueries";
 import { ActionTable, ActionTableItem } from "@/components/ui/ActionTable";
 import { ReviewApplicationModal } from "@/components/modals/ReviewApplicationModal";
 
-import { useTheme } from "../layout";
+import { useTheme } from "@/lib/dashboard-theme";
 
 export default function DelegationsPage() {
   const { user } = useAuth();

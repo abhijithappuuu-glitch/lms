@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useTheme } from "../layout";
+import { useTheme } from "@/lib/dashboard-theme";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { ActionTable, ActionTableItem } from "@/components/ui/ActionTable";
 import { DonutChart } from "@/components/ui/Charts";
@@ -18,10 +18,10 @@ export default function DeanDashboard() {
   const { data: metrics, isLoading: loadingMetrics } = useDashboardMetrics("DEAN");
 
   const facultyOnLeaveData = [
-    { name: "CSE", value: 4, color: "blue" },
-    { name: "ECE", value: 3, color: "emerald" },
-    { name: "MECH", value: 2, color: "amber" },
-    { name: "CIVIL", value: 1, color: "rose" },
+    { name: "CSE", value: 4, color: "#245A81" },
+    { name: "ECE", value: 3, color: "#6E9B7A" },
+    { name: "MECH", value: 2, color: "#B18A52" },
+    { name: "CIVIL", value: 1, color: "#4A8CB5" },
   ];
 
   return (

@@ -6,13 +6,7 @@ import Topbar from "@/components/layout/Topbar";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { useThemeMode } from "@/lib/theme";
-
-export const ThemeContext = React.createContext({ 
-  isDark: false, 
-  role: "Employee",
-  toggleTheme: () => {}
-});
-export const useTheme = () => React.useContext(ThemeContext);
+import { ThemeContext } from "@/lib/dashboard-theme";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

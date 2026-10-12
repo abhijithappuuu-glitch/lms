@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "../layout";
+import { useTheme } from "@/lib/dashboard-theme";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { ActionTable, ActionTableItem } from "@/components/ui/ActionTable";
 import { DonutChart, SimpleBarChart } from "@/components/ui/Charts";

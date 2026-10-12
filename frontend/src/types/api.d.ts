@@ -25,7 +25,20 @@ export interface DashboardMetrics {
 export interface ChartData {
   distribution: { name: string; value: number }[];
   trend: { name: string; value: number }[];
-  departmentStats?: { name: string; activeLeaves: number }[];
+  departmentStats?: { name: string; activeLeaves: number; total?: number; approved?: number }[];
+}
+
+export interface RecentApproval {
+  id: string;
+  applicant: string;
+  department: string;
+  leaveType: string;
+  dates: string;
+  duration: number;
+  status: "approved" | "rejected";
+  decision: string;
+  decidedBy: string;
+  date: string;
 }
 
 export interface LeaveApplication {
