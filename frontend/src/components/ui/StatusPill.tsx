@@ -16,7 +16,7 @@ export function StatusPill({ status, className, isDark }: StatusPillProps) {
     rejected: isDark ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-rose-50 text-rose-700 border-rose-200",
     review: isDark ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-blue-50 text-blue-700 border-blue-200",
     cancelled: isDark ? "bg-slate-500/10 text-slate-400 border-slate-500/20" : "bg-slate-50 text-slate-700 border-slate-200",
-    returned: isDark ? "bg-purple-500/10 text-purple-400 border-purple-500/20" : "bg-purple-50 text-purple-700 border-purple-200",
+    returned: isDark ? "bg-slate-400/10 text-slate-300 border-slate-400/20" : "bg-slate-100 text-slate-700 border-slate-300",
   };
 
   const labels = {

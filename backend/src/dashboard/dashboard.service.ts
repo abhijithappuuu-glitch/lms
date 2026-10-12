@@ -55,7 +55,7 @@ export class DashboardService {
         employee: { departmentId },
         startDate: { lte: today },
         endDate: { gte: today },
-        status: 'APPROVED'
+        status: { in: ['SANCTIONED', 'APPROVED'] }
       }
     });
 
@@ -70,7 +70,7 @@ export class DashboardService {
     const approvedThisMonth = await this.prisma.leaveApplication.count({
       where: {
         employee: { departmentId },
-        status: 'APPROVED',
+        status: { in: ['SANCTIONED', 'APPROVED'] },
         startDate: { gte: thisMonth }
       }
     });
@@ -90,7 +90,7 @@ export class DashboardService {
       where: {
         startDate: { lte: today },
         endDate: { gte: today },
-        status: 'APPROVED'
+        status: { in: ['SANCTIONED', 'APPROVED'] }
       }
     });
 
@@ -101,7 +101,7 @@ export class DashboardService {
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const approvedThisMonth = await this.prisma.leaveApplication.count({
       where: {
-        status: 'APPROVED',
+        status: { in: ['SANCTIONED', 'APPROVED'] },
         startDate: { gte: thisMonth }
       }
     });
@@ -119,7 +119,7 @@ export class DashboardService {
     const applications = await this.prisma.leaveApplication.groupBy({
       by: ['leaveTypeId'],
       _count: { leaveTypeId: true },
-      where: { ...baseWhere, status: 'APPROVED' }
+      where: { ...baseWhere, status: { in: ['SANCTIONED', 'APPROVED'] } }
     });
 
     const leaveTypes = await this.prisma.leaveType.findMany();
@@ -130,7 +130,6 @@ export class DashboardService {
         value: a._count.leaveTypeId
       };
     });
-
     // 2. Department Leave Trend (Bar Chart) - only for Principal, otherwise just monthly trend
     // Monthly trend for the last 6 months
     const trend = [];
@@ -142,7 +141,7 @@ export class DashboardService {
       const count = await this.prisma.leaveApplication.count({
         where: {
           ...baseWhere,
-          status: 'APPROVED',
+          status: { in: ['SANCTIONED', 'APPROVED'] },
           startDate: { gte: start, lte: end }
         }
       });
@@ -160,15 +159,18 @@ export class DashboardService {
     if (role === 'PRINCIPAL' || role === 'SYSTEM_ADMIN') {
       const depts = await this.prisma.department.findMany();
       for (const dept of depts) {
-        const count = await this.prisma.leaveApplication.count({
-          where: { employee: { departmentId: dept.id }, status: 'APPROVED' }
+        const total = await this.prisma.leaveApplication.count({
+          where: { employee: { departmentId: dept.id } }
         });
-        deptStats.push({ name: dept.code, activeLeaves: count });
+        const approved = await this.prisma.leaveApplication.count({
+          where: { employee: { departmentId: dept.id }, status: { in: ['SANCTIONED', 'APPROVED'] } }
+        });
+        deptStats.push({ name: dept.code, activeLeaves: approved, total, approved });
       }
     }
 
     return {
-      distribution: distribution.length > 0 ? distribution : [{ name: 'CL', value: 1 }],
+      distribution, // empty array when there is genuinely no data ("No Data" state in UI)
       trend,
       departmentStats: deptStats
     };

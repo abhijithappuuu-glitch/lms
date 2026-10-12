@@ -16,7 +16,7 @@ export default function LoginPortal() {
     <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 font-sans transition-colors">
       <ThemeToggle className="fixed top-5 right-5 z-30" />
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl dark:shadow-black/40 border border-slate-100 dark:border-slate-800 overflow-hidden">
-        <div className="bg-blue-600 dark:bg-gradient-to-br dark:from-blue-700 dark:to-indigo-800 p-8 text-center">
+        <div className="bg-blue-600 dark:bg-gradient-to-br dark:from-blue-700 dark:to-blue-900 p-8 text-center">
           <div className="w-16 h-16 bg-white rounded-2xl mx-auto flex items-center justify-center shadow-inner mb-4">
             <span className="text-blue-600 font-bold text-2xl">SD</span>
           </div>

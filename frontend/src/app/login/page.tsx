@@ -46,7 +46,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={cn("h-screen w-full relative flex items-center justify-center font-sans overflow-hidden transition-colors duration-500", isDark ? "bg-[#0f172a]" : "bg-slate-50")}>
+    <div className={cn("h-screen w-full relative flex items-center justify-center font-sans overflow-hidden transition-colors duration-500", isDark ? "bg-[#0A1D29]" : "bg-slate-50")}>
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center z-0"
@@ -72,7 +72,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-4 mt-1">
           <div className="hidden md:flex items-center gap-3">
             <span className={cn("text-xs font-semibold tracking-wide", isDark ? "text-white drop-shadow-md" : "text-slate-900")}>SDMCET LMS</span>
-            <div className="w-6 h-0.5 bg-[#F5B041] shadow-sm"></div>
+            <div className="w-6 h-0.5 bg-[#B18A52] shadow-sm"></div>
           </div>
           <button 
             onClick={toggleTheme}
@@ -89,13 +89,13 @@ export default function LoginPage() {
         
         {/* Left Typography */}
         <div className={cn("w-full lg:w-1/2 flex flex-col justify-center h-full animate-in fade-in slide-in-from-left-4 duration-1000", isDark ? "text-white" : "text-slate-900")}>
-          <div className="w-10 h-0.5 bg-[#F5B041] mb-5 shadow-sm"></div>
+          <div className="w-10 h-0.5 bg-[#B18A52] mb-5 shadow-sm"></div>
           
           <h1 className={cn("text-4xl lg:text-[3.5rem] font-bold leading-[1.05] mb-5 tracking-tight", isDark ? "drop-shadow-lg" : "")}>
             A <br />
             Stronger <br />
             Institution <br />
-            <span className="text-[#F5B041]">Together</span>
+            <span className="text-[#B18A52]">Together</span>
           </h1>
           
           <p className={cn("text-lg lg:text-xl font-light mb-8", isDark ? "text-slate-200 drop-shadow-md" : "text-slate-700")}>
@@ -103,11 +103,11 @@ export default function LoginPage() {
           </p>
           
           <div className="relative pl-8 max-w-sm">
-            <span className="text-4xl text-[#F5B041] absolute -top-1.5 left-0 font-serif leading-none drop-shadow-md">“</span>
+            <span className="text-4xl text-[#B18A52] absolute -top-1.5 left-0 font-serif leading-none drop-shadow-md">“</span>
             <p className={cn("text-lg lg:text-xl font-light italic leading-snug", isDark ? "text-slate-100 drop-shadow-md" : "text-slate-800")}>
               Leadership <br />
               enables <br />
-              Academic Continuity.<span className="text-[#F5B041] font-serif text-2xl ml-1 leading-none">”</span>
+              Academic Continuity.<span className="text-[#B18A52] font-serif text-2xl ml-1 leading-none">”</span>
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
           <div className={cn("backdrop-blur-xl border rounded-[1.5rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 lg:p-7 transition-colors duration-500", isDark ? "bg-black/20 border-white/10" : "bg-white/80 border-slate-200")}>
             
             <div className="flex flex-col items-center mb-5">
-              <div className="w-10 h-10 bg-[#1a65ff] rounded-xl flex items-center justify-center text-white mb-3 shadow-lg shadow-blue-500/20">
+              <div className="w-10 h-10 bg-[#245A81] rounded-xl flex items-center justify-center text-white mb-3 shadow-lg shadow-blue-500/20">
                 <Building2 className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <h2 className={cn("text-xl font-semibold tracking-wide mb-1", isDark ? "text-white" : "text-slate-900")}>SDMCET LMS</h2>
@@ -176,7 +176,7 @@ export default function LoginPage() {
               <button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full bg-[#1a65ff] hover:bg-[#1556e5] text-white font-medium py-2.5 rounded-lg transition-all mt-4 text-[13.5px] flex items-center justify-center gap-2 shadow-md"
+                className="w-full bg-[#245A81] hover:bg-[#1D4A6B] text-white font-medium py-2.5 rounded-lg transition-all mt-4 text-[13.5px] flex items-center justify-center gap-2 shadow-md"
               >
                 {loading ? "Signing in..." : "Sign In"}
                 {!loading && <span className="text-sm leading-none ml-1">→</span>}
@@ -185,7 +185,7 @@ export default function LoginPage() {
 
             <div className="mt-4 text-center">
               <p className={cn("text-[12px]", isDark ? "text-slate-300" : "text-slate-600")}>
-                New staff member? <Link href="/register" className="text-[#4b8df8] font-semibold hover:text-blue-500 transition-colors">Register here</Link>
+                New staff member? <Link href="/register" className="text-[#2F6E9E] font-semibold hover:text-blue-500 transition-colors">Register here</Link>
               </p>
             </div>
             
